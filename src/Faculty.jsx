@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import Professor, { PROFESSORS } from './Professor.jsx'
+import Zaman from './Zaman.jsx'
 import { DRUMS, LECTERNS } from './layout.js'
 
 // which Hogwarts professor teaches in which classroom (matches the slide decks)
@@ -33,18 +34,29 @@ function plaqueTex(name) {
   return t
 }
 
-export default function Faculty() {
+// AI professors you can talk to replace the wizard in their room
+const AI_PROFESSOR = {
+  2400: { slug: 'tauhid-zaman', name: 'Tauhid Zaman' }, // MGT 409
+}
+
+export default function Faculty({ talkRef, onNearProfessor }) {
   const items = useMemo(
     () =>
       DRUMS.map((d, i) => {
         const who = ROOM_PROFESSOR[d.id]
         const { fc, back, t, half, rot } = d.front
         const lec = LECTERNS[i]
+        const ai = AI_PROFESSOR[d.id]
         return {
           who,
+          ai,
           pos: [fc[0] + back[0] * 1.15 - t[0] * half * 0.3, 0, fc[1] + back[1] * 1.15 - t[1] * half * 0.3],
           rot,
-          plaque: { p: [lec.x + back[0] * 0.26, 0.85, lec.z + back[1] * 0.26], rot, mat: new THREE.MeshBasicMaterial({ map: plaqueTex(PROFESSORS[who].name) }) },
+          plaque: {
+            p: [lec.x + back[0] * 0.26, 0.85, lec.z + back[1] * 0.26],
+            rot,
+            mat: new THREE.MeshBasicMaterial({ map: plaqueTex(ai ? ai.name : PROFESSORS[who].name) }),
+          },
         }
       }),
     [],
@@ -53,7 +65,11 @@ export default function Faculty() {
     <>
       {items.map((it, i) => (
         <group key={i}>
-          <Professor who={it.who} position={it.pos} rotation={it.rot} phase={i * 1.7} />
+          {it.ai ? (
+            <Zaman position={it.pos} rotation={it.rot} talkRef={talkRef} onNear={(near) => onNearProfessor?.(near ? it.ai : null)} />
+          ) : (
+            <Professor who={it.who} position={it.pos} rotation={it.rot} phase={i * 1.7} />
+          )}
           <mesh position={it.plaque.p} rotation={[0, it.plaque.rot, 0]} material={it.plaque.mat}>
             <planeGeometry args={[0.6, 0.15]} />
           </mesh>

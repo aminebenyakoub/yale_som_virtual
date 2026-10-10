@@ -4,6 +4,7 @@ import World from './World.jsx'
 import Player from './Player.jsx'
 import Minimap from './Minimap.jsx'
 import TouchControls from './TouchControls.jsx'
+import ChatPanel from './ChatPanel.jsx'
 import { EYE, SPAWN } from './layout.js'
 
 export default function App() {
@@ -24,11 +25,37 @@ export default function App() {
     setTouchOn(on)
   }
   const playing = locked || touchOn
+
+  // AI professors: walk up to one and press E (or tap Talk) to chat
+  const talkRef = useRef({ near: false, open: false, speaking: false })
+  const [nearProf, setNearProf] = useState(null)
+  const [chatProf, setChatProf] = useState(null)
+  const wasTouch = useRef(false)
+  const onNearProfessor = useCallback((p) => setNearProf(p), [])
+  const openChat = useCallback(() => {
+    if (!nearProf) return
+    wasTouch.current = touchRef.current.active
+    if (wasTouch.current) setTouch(false)
+    document.exitPointerLock?.()
+    talkRef.current.open = true
+    setChatProf(nearProf)
+  }, [nearProf]) // eslint-disable-line react-hooks/exhaustive-deps
+  const closeChat = useCallback(() => {
+    talkRef.current.open = false
+    setChatProf(null)
+    if (wasTouch.current) setTouch(true)
+    else lockRef.current?.() // straight back to walking (needs the click; after Esc the overlay shows instead)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    const k = (e) => e.code === 'KeyM' && setShowMap((v) => !v)
+    const k = (e) => {
+      if (e.target.closest?.('input, textarea')) return
+      if (e.code === 'KeyM') setShowMap((v) => !v)
+      if (e.code === 'KeyE' && playing && !chatProf) openChat()
+    }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
-  }, [])
+  }, [playing, chatProf, openChat])
 
   return (
     <>
@@ -36,7 +63,7 @@ export default function App() {
         camera={{ fov: 72, near: 0.05, far: 800, position: [SPAWN.x, EYE, SPAWN.z] }}
         dpr={[1, 1.75]}
       >
-        <World />
+        <World talkRef={talkRef} onNearProfessor={onNearProfessor} />
         <Player lockRef={lockRef} mapRef={mapRef} touchRef={touchRef} onLock={onLock} onWhere={onWhere} />
       </Canvas>
 
@@ -53,7 +80,22 @@ export default function App() {
       {playing && <div className="crosshair" />}
       {touchOn && <TouchControls touchRef={touchRef} onPause={() => setTouch(false)} />}
 
-      {!playing && (
+      {nearProf && playing && !chatProf && (
+        <div className="talkhint">
+          {touchOn ? (
+            <button className="go" onClick={openChat}>
+              Talk to Prof. {nearProf.name.split(' ').slice(-1)[0]}
+            </button>
+          ) : (
+            <>
+              Press <kbd>E</kbd> to talk to Prof. {nearProf.name.split(' ').slice(-1)[0]}
+            </>
+          )}
+        </div>
+      )}
+      {chatProf && <ChatPanel prof={chatProf} talkRef={talkRef} onClose={closeChat} />}
+
+      {!playing && !chatProf && (
         <div className="overlay" onClick={() => (isTouch ? setTouch(true) : lockRef.current?.())}>
           <div className="card">
             <div className="kicker">Yale SOM · Evans Hall</div>

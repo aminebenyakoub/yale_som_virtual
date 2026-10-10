@@ -3,7 +3,7 @@ import * as THREE from 'three'
 // Lecture slides drawn on canvas, one deck per course (Yale SOM Fall 2026 MBA courses).
 // kind: 'title' | 'chart' | 'content'
 export const COURSES = {
-  mgt409: { code: 'MGT 409', name: 'AI Foundations for Managers', prof: 'Albus Dumbledore' },
+  mgt409: { code: 'MGT 409', name: 'AI Foundations for Managers', prof: 'Tauhid Zaman' },
   mgt404: { code: 'MGT 404', name: 'Basics of Economics', prof: 'Minerva McGonagall' },
   mgt403: { code: 'MGT 403', name: 'Probability Modeling & Statistics', prof: 'Sybill Trelawney' },
   mgt887: { code: 'MGT 887', name: 'Negotiations', prof: 'Horace Slughorn' },
